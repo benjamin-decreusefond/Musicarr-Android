@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 320x180 banner shown on the Android TV launcher row. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#16A34A"
+        android:pathData="M0,0h320v180h-320z" />
+    <group android:translateX="36" android:translateY="38">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M42,12 L84,20 L84,68 A14,10 0 1,1 76,58 L76,30 L50,25 L50,76 A14,10 0 1,1 42,66 Z" />
+    </group>
+    <!-- Wordmark: kept as simple shapes-free text via path is overkill; the
+         launcher also overlays the app label, so the glyph alone is enough. -->
+</vector>

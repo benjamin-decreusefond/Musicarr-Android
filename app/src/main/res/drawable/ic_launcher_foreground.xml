@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple eighth-note glyph -->
+    <group android:scaleX="0.5" android:scaleY="0.5" android:translateX="27" android:translateY="27">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M42,12 L84,20 L84,68 A14,10 0 1,1 76,58 L76,30 L50,25 L50,76 A14,10 0 1,1 42,66 Z" />
+    </group>
+</vector>
