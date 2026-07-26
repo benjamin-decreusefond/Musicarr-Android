@@ -20,6 +20,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,7 +36,9 @@ import com.musicarr.android.ui.ErrorBox
 import com.musicarr.android.ui.LoadState
 import com.musicarr.android.ui.LoadingBox
 import com.musicarr.android.ui.LocalPlayer
+import com.musicarr.android.ui.OfflineBanner
 import com.musicarr.android.ui.OfflineToggle
+import com.musicarr.android.ui.rememberOffline
 import com.musicarr.android.ui.TrackRow
 import com.musicarr.android.ui.dpadFocusable
 import com.musicarr.android.ui.playOrDownload
@@ -72,22 +75,50 @@ private fun LibraryTracksTab(snackbar: SnackbarHostState) {
     val repo = MusicarrApp.instance.repository
     val player = LocalPlayer.current
     val scope = rememberCoroutineScope()
-    val (state, refresh) = rememberLoad { repo.library() }
-    when (state) {
-        is LoadState.Loading -> LoadingBox()
-        is LoadState.Failed -> ErrorBox(state.message, refresh)
-        is LoadState.Ready -> {
-            val tracks = state.data
-            if (tracks.isEmpty()) return EmptyHint("Nothing in the library yet — search and download something.")
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-                items(tracks, key = { it.trackId }) { t ->
-                    TrackRow(
-                        t,
-                        onClick = { playOrDownload(tracks, t, player, repo, scope, snackbar) },
-                        trailing = { OfflineToggle(t, snackbar) },
-                    )
+    val offline = rememberOffline()
+    // Offline, the local catalogue IS the library: the API can't be reached, and
+    // the downloaded tracks are the only ones that could play anyway.
+    val cached by MusicarrApp.instance.offline.catalogue.collectAsStateWithLifecycle(initialValue = emptyList())
+    val (state, refresh) = rememberLoad(offline) { repo.library() }
+
+    Column(Modifier.fillMaxSize()) {
+        if (offline) OfflineBanner()
+        when {
+            offline || state is LoadState.Failed -> {
+                if (cached.isEmpty()) {
+                    // Distinguish "you have nothing saved" from "the server is
+                    // unreachable" — they need different things from the user.
+                    if (offline) EmptyHint("No music saved on this device yet. Reconnect and tap the cloud icon on a track to keep it offline.")
+                    else ErrorBox((state as LoadState.Failed).message, refresh)
+                } else {
+                    TrackList(cached, player, repo, scope, snackbar)
                 }
             }
+            state is LoadState.Loading -> LoadingBox()
+            state is LoadState.Ready -> {
+                val tracks = state.data
+                if (tracks.isEmpty()) EmptyHint("Nothing in the library yet — search and download something.")
+                else TrackList(tracks, player, repo, scope, snackbar)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackList(
+    tracks: List<com.musicarr.android.data.Track>,
+    player: com.musicarr.android.playback.PlayerConnection,
+    repo: com.musicarr.android.data.MusicarrRepository,
+    scope: kotlinx.coroutines.CoroutineScope,
+    snackbar: SnackbarHostState,
+) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+        items(tracks, key = { it.trackId }) { t ->
+            TrackRow(
+                t,
+                onClick = { playOrDownload(tracks, t, player, repo, scope, snackbar) },
+                trailing = { OfflineToggle(t, snackbar) },
+            )
         }
     }
 }

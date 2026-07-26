@@ -46,6 +46,12 @@ interface MusicarrApi {
     @GET("api/offline") suspend fun offlinePins(): List<Track>
     @PUT("api/offline/{trackId}") suspend fun pinOffline(@Path("trackId") trackId: Long, @Body track: Track): OkResponse
     @DELETE("api/offline/{trackId}") suspend fun unpinOffline(@Path("trackId") trackId: Long): OkResponse
+    // Whole albums/playlists. The server expands these into the track set
+    // returned by offlinePins(), so a playlist gaining a song is picked up
+    // here with no client-side logic.
+    @GET("api/offline/collections") suspend fun offlineCollections(): List<OfflineCollection>
+    @PUT("api/offline/collections/{kind}/{id}") suspend fun pinCollection(@Path("kind") kind: String, @Path("id") id: Long): OkResponse
+    @DELETE("api/offline/collections/{kind}/{id}") suspend fun unpinCollection(@Path("kind") kind: String, @Path("id") id: Long): OkResponse
 
     // Made for you + history
     @GET("api/mixes") suspend fun mixes(): Mixes
