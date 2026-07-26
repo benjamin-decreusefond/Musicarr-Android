@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ replacement for backup_rules.xml, covering both cloud backup and
+  device-to-device transfer. Same reasoning: the session cookie must not leave
+  the device it was issued to. See backup_rules.xml.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/musicarr_session.preferences_pb" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/musicarr_session.preferences_pb" />
+    </device-transfer>
+</data-extraction-rules>

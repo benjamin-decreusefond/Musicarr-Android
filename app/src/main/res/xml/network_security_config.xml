@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Musicarr is self-hosted, so plain HTTP has to stay possible: plenty of people
+  run the server on their LAN with no certificate.
+
+  Note this file cannot express "cleartext only on the LAN": Android matches
+  <domain> entries by DNS suffix, and IP literals must be listed exactly, so
+  private CIDR ranges like 10.0.0.0/8 are not expressible here. The LAN
+  restriction is therefore enforced in code — see CleartextGuard in ApiClient,
+  which rejects http:// to anything that isn't a private/loopback address and
+  covers ExoPlayer's requests too, since it shares the same OkHttpClient.
+
+  What this file still buys us: user-installed CA certificates are trusted, so
+  someone running their server behind a self-signed or private-CA certificate
+  can install it on the device and use HTTPS instead of falling back to
+  cleartext.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

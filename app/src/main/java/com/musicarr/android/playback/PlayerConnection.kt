@@ -41,6 +41,9 @@ data class NowPlaying(
  * player state as flows Compose can collect. Created by the activity; shared
  * by every screen.
  */
+// PlaybackService is annotated @UnstableApi, so naming it here (to build the
+// SessionToken) is itself an opt-in usage and has to be declared.
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class PlayerConnection(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var controller: MediaController? = null
