@@ -34,6 +34,8 @@ import com.musicarr.android.ui.LoadingBox
 import com.musicarr.android.ui.LocalPlayer
 import com.musicarr.android.ui.TrackRow
 import com.musicarr.android.ui.dpadFocusable
+import com.musicarr.android.ui.CollectionOfflineButton
+import com.musicarr.android.ui.OfflineToggle
 import com.musicarr.android.ui.playOrDownload
 import com.musicarr.android.ui.rememberLoad
 import kotlinx.coroutines.launch
@@ -117,11 +119,16 @@ fun PlaylistDetailScreen(playlistId: Long, snackbar: SnackbarHostState) {
                                 Icon(Icons.Default.Shuffle, contentDescription = null)
                                 Text("Shuffle", Modifier.padding(start = 4.dp))
                             }
+                            CollectionOfflineButton("playlist", p.id, snackbar)
                         }
                     }
                 }
                 items(p.tracks, key = { it.trackId }) { t ->
-                    TrackRow(t, onClick = { playOrDownload(p.tracks, t, player, repo, scope, snackbar) })
+                    TrackRow(
+                        t,
+                        onClick = { playOrDownload(p.tracks, t, player, repo, scope, snackbar) },
+                        trailing = { OfflineToggle(t, snackbar) },
+                    )
                 }
             }
         }

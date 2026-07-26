@@ -52,7 +52,10 @@ class PlaybackService : MediaSessionService() {
         player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 val id = mediaItem?.mediaId?.toLongOrNull() ?: return
-                scope.launch { app.repository.recordPlay(id) }
+                // Goes through PlayReporter so a listen with no connectivity is
+                // queued and replayed later rather than silently lost — which is
+                // exactly when offline playback means people are listening.
+                scope.launch { app.playReporter.record(id) }
             }
         })
 

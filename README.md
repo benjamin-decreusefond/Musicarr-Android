@@ -49,9 +49,14 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 ## Connecting
 
 On first launch enter your server's URL (e.g. `http://192.168.1.10:8686`),
-username and password. Plain-HTTP servers on a LAN work out of the box
-(`usesCleartextTraffic` is enabled); use HTTPS if your server is reachable
-from outside your network.
+username and password.
+
+Plain HTTP works for a server on your local network (loopback, RFC1918,
+link-local, unique-local IPv6, CGNAT ranges, and `.local`/`.lan`/`.home.arpa`
+names). Anything else **must** use HTTPS: the app refuses to send your session
+cookie unencrypted to a public host. If your server is reachable from outside
+your network, either put it behind TLS or install its certificate on the device
+— user-installed CAs are trusted.
 
 ## Architecture (short version)
 
@@ -65,5 +70,77 @@ from outside your network.
   requests are authenticated too.
 - **Media3** — `MediaSessionService` + ExoPlayer for background/TV playback;
   the UI talks to it through a `MediaController`.
-- No local database: the server is the single source of truth, matching the
-  server's own "no offline mode" stance.
+- **Room** — a local catalogue of the tracks pinned for offline playback, plus
+  a queue of listens recorded while offline. It is strictly a cache of server
+  state and a replayable queue: the server remains the source of truth, and the
+  database is rebuilt from it on the next sync.
+- **Media3 `DownloadManager` + `SimpleCache`** — pinned audio, keyed by track
+  id rather than URL so a track downloaded at one quality is still a cache hit
+  when played at another.
+
+## Releasing
+
+Releases are automatic. Merging a pull request into `main` builds a signed APK
+and AAB and publishes them to a GitHub Release, tagging the version as it goes.
+The bump level comes from a label on the pull request:
+
+| Label | Effect |
+| --- | --- |
+| `major` | `X+1.0.0` |
+| `minor` | `x.Y+1.0` |
+| `patch` | `x.y.Z+1` (the default when no label is set) |
+| `no-release` | skip the release entirely |
+
+`versionCode` is the commit count on `main` — monotonic by construction, so it
+always satisfies the Play Store's strictly-increasing requirement without any
+stored state.
+
+You can also run the workflow by hand from the Actions tab ("auto-release"),
+choosing the bump level.
+
+### One-time signing setup
+
+Without these secrets the workflow still runs, but publishes an **unsigned**
+APK — installable with `adb install`, not by tapping it on a device, and not
+uploadable to Play.
+
+Generate a keystore (keep it somewhere safe and **back it up** — losing it
+means you can never update an app already published under it):
+
+```bash
+keytool -genkeypair -v \
+  -keystore musicarr-release.jks \
+  -alias musicarr \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Base64-encode it for storage as a secret:
+
+```bash
+base64 -w0 musicarr-release.jks   # macOS: base64 -i musicarr-release.jks
+```
+
+Then add four repository secrets under **Settings → Secrets and variables →
+Actions**:
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | the base64 output above |
+| `ANDROID_KEYSTORE_PASSWORD` | the keystore password |
+| `ANDROID_KEY_ALIAS` | the alias (`musicarr` above) |
+| `ANDROID_KEY_PASSWORD` | the key password |
+
+Nothing else is required: no Play Store account, no Google credentials. The
+release goes to GitHub Releases, and users install the APK directly.
+
+### Building a release locally
+
+```bash
+./gradlew assembleRelease \
+  -PversionName=1.2.0 -PversionCode=42 \
+  -PkeystoreFile=/path/to/musicarr-release.jks \
+  -PkeystorePassword=... -PkeyAlias=musicarr -PkeyPassword=...
+```
+
+Omit the keystore properties and you get an unsigned APK, which is fine for
+local testing.

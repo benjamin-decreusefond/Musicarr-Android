@@ -31,6 +31,8 @@ import com.musicarr.android.ui.LoadingBox
 import com.musicarr.android.ui.LocalPlayer
 import com.musicarr.android.ui.TrackRow
 import com.musicarr.android.ui.dpadFocusable
+import com.musicarr.android.ui.CollectionOfflineButton
+import com.musicarr.android.ui.OfflineToggle
 import com.musicarr.android.ui.playOrDownload
 import com.musicarr.android.ui.rememberLoad
 import kotlinx.coroutines.launch
@@ -88,6 +90,12 @@ fun AlbumScreen(albumId: Long, snackbar: SnackbarHostState, onOpenArtist: (Long)
                                     Text("Download album", Modifier.padding(start = 4.dp))
                                 }
                             }
+                            // Only offer "keep offline" once the server has at
+                            // least some of the album — pinning a release the
+                            // server can't serve yet would download nothing.
+                            if (tracks.any { it.available }) {
+                                CollectionOfflineButton("album", album.id, snackbar)
+                            }
                         }
                     }
                 }
@@ -96,6 +104,7 @@ fun AlbumScreen(albumId: Long, snackbar: SnackbarHostState, onOpenArtist: (Long)
                         t,
                         subtitle = t.artist ?: album.artist ?: "",
                         onClick = { playOrDownload(tracks, t, player, repo, scope, snackbar) },
+                        trailing = { OfflineToggle(t, snackbar) },
                     )
                 }
             }

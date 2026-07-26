@@ -170,6 +170,13 @@ data class Me(
     val avatar: String? = null,
 )
 
+@Serializable
+data class OfflineCollection(
+    val kind: String = "",
+    val collection_id: Long = 0,
+    val created_at: String? = null,
+)
+
 @Serializable data class LoginRequest(val username: String, val password: String)
 @Serializable data class DownloadRequest(val kind: String, val deezer_id: Long)
 @Serializable data class DownloadQueued(val id: Long? = null, val alreadyHave: FBool = false)
