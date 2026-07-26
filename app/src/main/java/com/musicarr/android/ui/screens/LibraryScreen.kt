@@ -35,6 +35,7 @@ import com.musicarr.android.ui.ErrorBox
 import com.musicarr.android.ui.LoadState
 import com.musicarr.android.ui.LoadingBox
 import com.musicarr.android.ui.LocalPlayer
+import com.musicarr.android.ui.OfflineToggle
 import com.musicarr.android.ui.TrackRow
 import com.musicarr.android.ui.dpadFocusable
 import com.musicarr.android.ui.playOrDownload
@@ -80,7 +81,11 @@ private fun LibraryTracksTab(snackbar: SnackbarHostState) {
             if (tracks.isEmpty()) return EmptyHint("Nothing in the library yet — search and download something.")
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(tracks, key = { it.trackId }) { t ->
-                    TrackRow(t, onClick = { playOrDownload(tracks, t, player, repo, scope, snackbar) })
+                    TrackRow(
+                        t,
+                        onClick = { playOrDownload(tracks, t, player, repo, scope, snackbar) },
+                        trailing = { OfflineToggle(t, snackbar) },
+                    )
                 }
             }
         }

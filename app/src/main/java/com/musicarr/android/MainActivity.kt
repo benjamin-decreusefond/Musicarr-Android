@@ -34,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,6 +95,11 @@ class MainActivity : ComponentActivity() {
                     if (!signedIn) {
                         LoginScreen(onLoggedIn = { signedIn = true })
                     } else {
+                        // Reconcile the offline set with the server once per
+                        // sign-in: pins live on the server, downloads live on
+                        // the device, and either can have changed while the app
+                        // was closed.
+                        LaunchedEffect(signedIn) { MusicarrApp.instance.offline.refresh() }
                         CompositionLocalProvider(LocalPlayer provides connection) {
                             MainNav(isTv = isTv, onSignedOut = { signedIn = false })
                         }

@@ -2,13 +2,16 @@
 <!--
   Android 12+ replacement for backup_rules.xml, covering both cloud backup and
   device-to-device transfer. Same reasoning: the session cookie must not leave
-  the device it was issued to. See backup_rules.xml.
+  the device it was issued to, and the offline audio store must not be uploaded
+  (it can be many gigabytes and is re-downloadable). See backup_rules.xml.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="file" path="datastore/musicarr_session.preferences_pb" />
+        <exclude domain="external" path="offline-audio" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="datastore/musicarr_session.preferences_pb" />
+        <exclude domain="external" path="offline-audio" />
     </device-transfer>
 </data-extraction-rules>

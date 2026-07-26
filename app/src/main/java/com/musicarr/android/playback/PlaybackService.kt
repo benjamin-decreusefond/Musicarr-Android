@@ -5,12 +5,12 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.musicarr.android.MusicarrApp
+import com.musicarr.android.offline.OfflineDownloads
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +31,10 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         val app = MusicarrApp.instance
-        val dataSourceFactory = OkHttpDataSource.Factory(app.apiClient.okHttp)
+        // Reads pinned tracks straight off the device and falls back to the
+        // network for everything else, so offline playback needs no separate
+        // code path in the player.
+        val dataSourceFactory = OfflineDownloads.playbackDataSourceFactory(this)
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .setAudioAttributes(
