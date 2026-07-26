@@ -1,6 +1,7 @@
 package com.musicarr.android.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -119,6 +120,12 @@ fun TrackRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // The row is itself clickable AND can carry an actionable trailing
+            // control (e.g. the offline toggle). Without a focus group, D-pad
+            // traversal treats the row as one target and the trailing control
+            // becomes unreachable on a TV remote — it works fine by touch, so
+            // this is exactly the kind of thing that only shows up on TV.
+            .focusGroup()
             .dpadFocusable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
