@@ -2,6 +2,8 @@ package com.musicarr.android.data
 
 import com.musicarr.android.data.local.OfflineCollectionEntity
 import com.musicarr.android.data.local.OfflineDao
+import com.musicarr.android.data.local.OfflinePlaylistEntity
+import com.musicarr.android.data.local.OfflinePlaylistItemEntity
 import com.musicarr.android.data.local.OfflineTrackEntity
 import com.musicarr.android.data.local.PendingPlayEntity
 import kotlinx.coroutines.flow.Flow
@@ -41,6 +43,12 @@ class PlayReporterTest {
         override fun observeCollections(): Flow<List<OfflineCollectionEntity>> = flowOf(emptyList())
         override suspend fun upsertCollections(collections: List<OfflineCollectionEntity>) {}
         override suspend fun deleteAllCollections() {}
+        override suspend fun cachedPlaylists(): List<OfflinePlaylistEntity> = emptyList()
+        override suspend fun cachedPlaylist(id: Long): OfflinePlaylistEntity? = null
+        override suspend fun cachedPlaylistTracks(id: Long): List<OfflineTrackEntity> = emptyList()
+        override suspend fun upsertPlaylist(playlist: OfflinePlaylistEntity) {}
+        override suspend fun deletePlaylistItems(id: Long) {}
+        override suspend fun insertPlaylistItems(items: List<OfflinePlaylistItemEntity>) {}
     }
 
     /** Sink whose outcome the test drives. */

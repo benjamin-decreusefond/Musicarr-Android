@@ -16,8 +16,14 @@ import androidx.room.RoomDatabase
  * only happens on app update, and far better than crashing on launch.
  */
 @Database(
-    entities = [OfflineTrackEntity::class, PendingPlayEntity::class, OfflineCollectionEntity::class],
-    version = 1,
+    entities = [
+        OfflineTrackEntity::class,
+        PendingPlayEntity::class,
+        OfflineCollectionEntity::class,
+        OfflinePlaylistEntity::class,
+        OfflinePlaylistItemEntity::class,
+    ],
+    version = 2,
     exportSchema = false,
 )
 abstract class OfflineDatabase : RoomDatabase() {

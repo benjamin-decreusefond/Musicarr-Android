@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import com.musicarr.android.data.MusicarrRepository
 import com.musicarr.android.data.SessionManager
+import com.musicarr.android.data.Playlist
 import com.musicarr.android.data.Track
 import com.musicarr.android.data.local.OfflineCollectionEntity
 import com.musicarr.android.data.local.OfflineDao
+import com.musicarr.android.data.local.OfflinePlaylistEntity
+import com.musicarr.android.data.local.OfflinePlaylistItemEntity
 import com.musicarr.android.data.local.OfflineTrackEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +47,28 @@ class OfflineManager(
 
     /** Track ids fully on device and playable with no network. */
     val downloaded: StateFlow<Set<Long>> = _downloaded
+
+    init {
+        // Without this, `downloaded` only changed on a full refresh (app start,
+        // reconnect), so a track's icon stayed on "downloading" until the next
+        // launch even though the file had already landed. The DownloadManager
+        // tells us the moment anything changes state.
+        OfflineDownloads.manager(context).addListener(
+            object : androidx.media3.exoplayer.offline.DownloadManager.Listener {
+                override fun onDownloadChanged(
+                    downloadManager: androidx.media3.exoplayer.offline.DownloadManager,
+                    download: androidx.media3.exoplayer.offline.Download,
+                    finalException: Exception?,
+                ) = refreshDownloaded()
+
+                override fun onDownloadRemoved(
+                    downloadManager: androidx.media3.exoplayer.offline.DownloadManager,
+                    download: androidx.media3.exoplayer.offline.Download,
+                ) = refreshDownloaded()
+            }
+        )
+        refreshDownloaded()
+    }
 
     /** Pinned albums/playlists, as "kind:id" keys. */
     val collections: Flow<Set<String>> =
@@ -126,6 +151,63 @@ class OfflineManager(
     suspend fun unpinCollection(kind: String, id: Long): Result<Unit> =
         repository.unpinCollection(kind, id).mapCatching { refresh().getOrThrow() }
 
+    /* ------------------------------------------------- Offline reads */
+    // What the screens fall back to when the server can't be reached. Each
+    // returns only what can actually be played — there's no value in listing a
+    // track whose audio isn't here.
+
+    suspend fun localTracks(): List<Track> = dao.tracks().map { it.toTrack() }
+
+    suspend fun searchLocal(query: String): List<Track> =
+        dao.searchTracks(query.trim()).map { it.toTrack() }
+
+    suspend fun localAlbum(albumId: Long): List<Track> =
+        dao.tracksInAlbum(albumId).map { it.toTrack() }
+
+    /** Playlists seen online, cached for offline browsing. */
+    suspend fun localPlaylists(): List<Playlist> = dao.cachedPlaylists().map {
+        Playlist(id = it.playlistId, name = it.name, cover = it.cover)
+    }
+
+    suspend fun localPlaylist(id: Long): Playlist? {
+        val meta = dao.cachedPlaylist(id) ?: return null
+        val tracks = dao.cachedPlaylistTracks(id).map { it.toTrack() }
+        return Playlist(id = meta.playlistId, name = meta.name, cover = meta.cover, count = tracks.size, tracks = tracks)
+    }
+
+    /** Remember a playlist the user just opened online, so it renders offline. */
+    suspend fun cachePlaylist(playlist: Playlist) {
+        dao.cachePlaylist(
+            OfflinePlaylistEntity(playlist.id, playlist.name, playlist.cover),
+            playlist.tracks.mapIndexed { i, t -> OfflinePlaylistItemEntity(playlist.id, i, t.trackId) },
+        )
+    }
+
     /** Bytes the offline library currently occupies. */
     fun bytesUsed(): Long = OfflineCache.bytesUsed(context)
+
+    /**
+     * Delete every downloaded file, keeping the server-side pins.
+     *
+     * "Free up space" and "I no longer want these offline" are different
+     * intentions: this is the former, so a later sync will re-download them.
+     * Unpinning is how you express the latter.
+     */
+    fun clearDownloads() {
+        OfflineDownloads.removeAll(context)
+        _downloaded.value = emptySet()
+    }
+
+    /** Change the quality pinned tracks are fetched at, and re-fetch anything
+     *  already on the device so the library ends up consistent rather than a
+     *  mix of qualities from whenever each track happened to be pinned. */
+    suspend fun setQuality(quality: DownloadQuality) {
+        if (quality == session.downloadQuality) return
+        session.setDownloadQuality(quality)
+        val current = OfflineDownloads.completedTrackIds(context)
+        for (id in current) {
+            OfflineDownloads.unpin(context, id)
+            OfflineDownloads.pin(context, id, session.downloadUrl(id))
+        }
+    }
 }

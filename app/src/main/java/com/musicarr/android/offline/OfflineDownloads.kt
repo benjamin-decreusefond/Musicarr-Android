@@ -75,6 +75,15 @@ object OfflineDownloads {
         )
     }
 
+    /** Remove every downloaded track from the device (the "free up space"
+     *  action). Server-side pins are untouched, so a later sync re-downloads
+     *  them — clearing storage is not the same as saying "I don't want these". */
+    fun removeAll(context: Context) {
+        DownloadService.sendRemoveAllDownloads(
+            context, MusicarrDownloadService::class.java, /* foreground = */ false
+        )
+    }
+
     /** Ids of tracks fully downloaded and playable offline right now. */
     fun completedTrackIds(context: Context): Set<Long> {
         val out = mutableSetOf<Long>()

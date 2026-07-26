@@ -85,3 +85,27 @@ data class OfflineCollectionEntity(
     val kind: String,
     val collectionId: Long,
 )
+
+/**
+ * A playlist's name, cached when the user opens it online.
+ *
+ * The server's offline endpoint returns a flat track set — it deliberately
+ * doesn't say which playlist each track came from, since the client has no
+ * need to know for downloading. But rendering "Playlists" offline needs names
+ * and membership, so those are cached opportunistically on view instead of
+ * being pushed into the sync protocol.
+ */
+@Entity(tableName = "offline_playlists")
+data class OfflinePlaylistEntity(
+    @PrimaryKey val playlistId: Long,
+    val name: String,
+    val cover: String?,
+)
+
+/** One track's place in a cached playlist. */
+@Entity(tableName = "offline_playlist_items", primaryKeys = ["playlistId", "position"])
+data class OfflinePlaylistItemEntity(
+    val playlistId: Long,
+    val position: Int,
+    val trackId: Long,
+)

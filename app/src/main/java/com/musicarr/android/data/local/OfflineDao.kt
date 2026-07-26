@@ -69,6 +69,47 @@ interface OfflineDao {
         upsertCollections(collections)
     }
 
+    /* -------------------------------------------- Cached playlists */
+
+    @Query("SELECT * FROM offline_playlists ORDER BY name COLLATE NOCASE")
+    suspend fun cachedPlaylists(): List<OfflinePlaylistEntity>
+
+    @Query("SELECT * FROM offline_playlists WHERE playlistId = :id")
+    suspend fun cachedPlaylist(id: Long): OfflinePlaylistEntity?
+
+    /**
+     * The tracks of a cached playlist that are actually on this device.
+     *
+     * Joining against offline_tracks is the point: a playlist member that was
+     * never downloaded can't be played offline, so showing it would only be a
+     * row that does nothing when tapped.
+     */
+    @Query(
+        """
+        SELECT t.* FROM offline_playlist_items i
+        JOIN offline_tracks t ON t.trackId = i.trackId
+        WHERE i.playlistId = :id ORDER BY i.position
+        """
+    )
+    suspend fun cachedPlaylistTracks(id: Long): List<OfflineTrackEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertPlaylist(playlist: OfflinePlaylistEntity)
+
+    @Query("DELETE FROM offline_playlist_items WHERE playlistId = :id")
+    suspend fun deletePlaylistItems(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlaylistItems(items: List<OfflinePlaylistItemEntity>)
+
+    /** Cache a playlist as it was just seen online. */
+    @Transaction
+    suspend fun cachePlaylist(playlist: OfflinePlaylistEntity, items: List<OfflinePlaylistItemEntity>) {
+        upsertPlaylist(playlist)
+        deletePlaylistItems(playlist.playlistId)
+        insertPlaylistItems(items)
+    }
+
     /* ----------------------------------------------------- Pending plays */
 
     @Insert

@@ -37,13 +37,18 @@ import com.musicarr.android.ui.dpadFocusable
 import com.musicarr.android.ui.CollectionOfflineButton
 import com.musicarr.android.ui.OfflineToggle
 import com.musicarr.android.ui.playOrDownload
+import com.musicarr.android.ui.rememberOffline
 import com.musicarr.android.ui.rememberLoad
 import kotlinx.coroutines.launch
 
 @Composable
 fun PlaylistsScreen(onOpenPlaylist: (Long) -> Unit) {
     val repo = MusicarrApp.instance.repository
-    val (state, refresh) = rememberLoad { repo.playlists() }
+    val offlineNow = rememberOffline()
+    val (state, refresh) = rememberLoad(offlineNow) {
+        if (offlineNow) Result.success(MusicarrApp.instance.offline.localPlaylists())
+        else repo.playlists()
+    }
     when (state) {
         is LoadState.Loading -> LoadingBox()
         is LoadState.Failed -> ErrorBox(state.message, refresh)
@@ -86,7 +91,17 @@ fun PlaylistDetailScreen(playlistId: Long, snackbar: SnackbarHostState) {
     val repo = MusicarrApp.instance.repository
     val player = LocalPlayer.current
     val scope = rememberCoroutineScope()
-    val (state, refresh) = rememberLoad(playlistId) { repo.playlist(playlistId) }
+    val offlineNow = rememberOffline()
+    val (state, refresh) = rememberLoad(playlistId, offlineNow) {
+        if (offlineNow) {
+            MusicarrApp.instance.offline.localPlaylist(playlistId)
+                ?.let { Result.success(it) }
+                ?: Result.failure(Exception("This playlist isn't saved on this device"))
+        } else {
+            // Cache it as seen, so it renders offline later.
+            repo.playlist(playlistId).onSuccess { MusicarrApp.instance.offline.cachePlaylist(it) }
+        }
+    }
     when (state) {
         is LoadState.Loading -> LoadingBox()
         is LoadState.Failed -> ErrorBox(state.message, refresh)
