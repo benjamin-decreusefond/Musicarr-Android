@@ -14,18 +14,48 @@ import java.util.concurrent.TimeUnit
 private const val SESSION_COOKIE = "musicarr_session"
 
 /**
- * Persists only the Musicarr session cookie (the only cookie the server sets)
- * and replays it on every request, so both Retrofit calls and ExoPlayer's
- * stream requests stay signed in across app restarts.
+ * The slice of [SessionManager] the cookie jar needs. Keeping it an interface
+ * lets the jar — which decides who the session token is handed to — be unit
+ * tested without Android's DataStore.
  */
-private class SessionCookieJar(private val session: SessionManager) : CookieJar {
+interface SessionCookieSource {
+    /** Host of the configured server, or "" when none is set. */
+    val serverHost: String
+    /** Current session token, or "" when signed out. */
+    val sessionCookie: String
+    /** Persist a token the server just refreshed. */
+    fun updateCookie(cookie: String)
+}
+
+/**
+ * Persists only the Musicarr session cookie (the only cookie the server sets)
+ * and replays it on every request to that server, so both Retrofit calls and
+ * ExoPlayer's stream requests stay signed in across app restarts.
+ */
+internal class SessionCookieJar(private val session: SessionCookieSource) : CookieJar {
+    /**
+     * Whether [url] is the Musicarr server this app is signed in to.
+     *
+     * This OkHttpClient is shared with ExoPlayer's data source, so it follows
+     * redirects and fetches stream URLs. Without a host check the session token
+     * would be attached to *any* host the client ends up talking to — a
+     * redirect off-origin, or a stream URL pointing elsewhere, would hand the
+     * user's credentials to a third party.
+     */
+    private fun isOwnServer(url: HttpUrl): Boolean {
+        val base = session.serverHost
+        return base.isNotEmpty() && url.host.equals(base, ignoreCase = true)
+    }
+
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+        if (!isOwnServer(url)) return
         cookies.firstOrNull { it.name == SESSION_COOKIE }?.let { c ->
             if (c.value != session.sessionCookie) session.updateCookie(c.value)
         }
     }
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
+        if (!isOwnServer(url)) return emptyList()
         val token = session.sessionCookie
         if (token.isEmpty()) return emptyList()
         return listOf(
@@ -40,6 +70,10 @@ class ApiClient(private val session: SessionManager) {
     /** Shared by Retrofit and the playback service's OkHttpDataSource. */
     val okHttp: OkHttpClient = OkHttpClient.Builder()
         .cookieJar(SessionCookieJar(session))
+        // Cleartext is allowed to a LAN server but never to a public host — see
+        // CleartextGuard. Added as a network interceptor so it also re-checks
+        // the target of every redirect, not just the original request.
+        .addNetworkInterceptor(CleartextGuard())
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .build()

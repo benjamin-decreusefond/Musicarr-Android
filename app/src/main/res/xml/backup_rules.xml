@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-backup rules for Android 11 and below (fullBackupContent).
+
+  The "musicarr_session" DataStore holds the session cookie in plain text. Left
+  in the backup set it would be copied to Google's servers and restored onto any
+  device the user sets up, so a live credential travels well outside the phone
+  it was issued to. Exclude it; the server URL lives in the same file, so the
+  cost is re-entering the address and signing in again after a restore.
+-->
+<full-backup-content>
+    <exclude domain="file" path="datastore/musicarr_session.preferences_pb" />
+</full-backup-content>
