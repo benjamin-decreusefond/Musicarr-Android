@@ -46,6 +46,38 @@ Install on a phone or an Android TV device (both use the same APK):
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## Installing without the Play Store
+
+Musicarr is distributed as an APK on the
+[Releases](https://github.com/benjamin-decreusefond/Musicarr-Android/releases)
+page — no store account, no listing, no review. Every merge to `main`
+publishes a new one automatically.
+
+**On a phone or tablet.** Download the APK from Releases in the phone's
+browser and open it. Android will ask permission to install from that browser
+the first time ("Install unknown apps"); grant it and the install proceeds.
+This is a supported flow, not a workaround.
+
+**On Android TV**, where there's no usable browser, pick one of:
+
+- **`adb`, over the network** — enable *Developer options → USB debugging* on
+  the TV, then from a computer on the same network:
+  ```bash
+  adb connect 192.168.1.42:5555     # the TV's IP
+  adb install Musicarr-1.2.0.apk
+  ```
+- **A sideload helper app** — "Downloader" (by AFTVnews) is the usual choice
+  on Android TV and Fire TV: type the APK's URL from the Releases page and it
+  downloads and installs it, no computer involved.
+- **A USB stick** plus any file manager on the TV.
+
+The app registers a leanback launcher entry, so once installed it appears on
+the TV home row like any other app.
+
+Note that an unsigned build (one produced before signing secrets were
+configured) can only be installed via `adb` — Android refuses to install an
+unsigned APK by tap.
+
 ## Connecting
 
 On first launch enter your server's URL (e.g. `http://192.168.1.10:8686`),

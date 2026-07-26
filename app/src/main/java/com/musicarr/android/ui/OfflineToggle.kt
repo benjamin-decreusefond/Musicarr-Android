@@ -1,12 +1,14 @@
 package com.musicarr.android.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -41,21 +43,25 @@ fun OfflineToggle(track: Track, snackbar: SnackbarHostState, modifier: Modifier 
     val isPinned = id in pinned
     val isDownloaded = id in downloaded
 
-    IconButton(
-        onClick = {
-            scope.launch {
-                val result = if (isPinned) offline.unpin(id) else offline.pin(track)
-                result.fold(
-                    onSuccess = {
-                        snackbar.showSnackbar(
-                            if (isPinned) "Removed from this device" else "Keeping \"${track.title}\" on this device"
-                        )
-                    },
-                    onFailure = { snackbar.showSnackbar(it.message ?: "Could not change offline status") },
-                )
+    // dpadFocusable rather than IconButton: it carries the app's green focus
+    // ring, so the control is visibly reachable with a TV remote instead of
+    // being an unmarked target inside an already-focusable row.
+    Box(
+        modifier = modifier
+            .dpadFocusable(CircleShape) {
+                scope.launch {
+                    val result = if (isPinned) offline.unpin(id) else offline.pin(track)
+                    result.fold(
+                        onSuccess = {
+                            snackbar.showSnackbar(
+                                if (isPinned) "Removed from this device" else "Keeping \"${track.title}\" on this device"
+                            )
+                        },
+                        onFailure = { snackbar.showSnackbar(it.message ?: "Could not change offline status") },
+                    )
+                }
             }
-        },
-        modifier = modifier,
+            .padding(8.dp),
     ) {
         Icon(
             when {

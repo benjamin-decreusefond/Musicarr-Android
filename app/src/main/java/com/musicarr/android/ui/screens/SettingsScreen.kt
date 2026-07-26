@@ -34,6 +34,7 @@ import com.musicarr.android.MusicarrApp
 import com.musicarr.android.offline.DownloadQuality
 import com.musicarr.android.offline.SAVER_BITRATE_KBPS
 import com.musicarr.android.ui.SectionHeader
+import com.musicarr.android.ui.dpadFocusable
 import kotlinx.coroutines.launch
 
 /** Human-readable byte size: 1.4 GB rather than 1503238553. */
@@ -83,7 +84,7 @@ fun SettingsScreen(snackbar: SnackbarHostState) {
                 OutlinedButton(
                     onClick = { confirmClear = true },
                     enabled = downloaded.isNotEmpty(),
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = 8.dp).dpadFocusable(),
                 ) { Text("Free up space") }
             }
         }
@@ -153,11 +154,15 @@ private fun QualityOption(
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            // The whole row is the target: a bare RadioButton is a tiny,
+            // barely-visible focus point from three metres away on a TV.
+            .dpadFocusable(onClick = onSelect)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        RadioButton(selected = selected, onClick = onSelect)
+        RadioButton(selected = selected, onClick = null)
         Column(Modifier.padding(top = 12.dp)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             Text(
