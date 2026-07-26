@@ -41,6 +41,12 @@ interface MusicarrApi {
     @POST("api/downloads/{id}/retry") suspend fun retryDownload(@Path("id") id: Long): OkResponse
     @DELETE("api/downloads/{id}") suspend fun dismissDownload(@Path("id") id: Long): OkResponse
 
+    // Offline pins: tracks this user wants kept on a device. The server also
+    // treats a pin as a reason to spare the file from auto-cleanup.
+    @GET("api/offline") suspend fun offlinePins(): List<Track>
+    @PUT("api/offline/{trackId}") suspend fun pinOffline(@Path("trackId") trackId: Long, @Body track: Track): OkResponse
+    @DELETE("api/offline/{trackId}") suspend fun unpinOffline(@Path("trackId") trackId: Long): OkResponse
+
     // Made for you + history
     @GET("api/mixes") suspend fun mixes(): Mixes
     @GET("api/history") suspend fun history(): List<Track>

@@ -10,6 +10,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import com.musicarr.android.offline.DownloadQuality
+import com.musicarr.android.offline.streamUrlFor
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 private val Context.dataStore by preferencesDataStore(name = "musicarr_session")
@@ -27,10 +29,14 @@ class SessionManager(private val context: Context) : SessionCookieSource {
     private val keyServerUrl = stringPreferencesKey("server_url")
     private val keyCookie = stringPreferencesKey("session_cookie")
     private val keyUsername = stringPreferencesKey("username")
+    private val keyDownloadQuality = stringPreferencesKey("download_quality")
 
     @Volatile var serverUrl: String = ""; private set
     @Volatile override var sessionCookie: String = ""; private set
     @Volatile var username: String = ""; private set
+    /** Quality pinned tracks are downloaded at. Read synchronously when
+     *  building a download URL, so it's cached in memory like the rest. */
+    @Volatile var downloadQuality: DownloadQuality = DownloadQuality.ORIGINAL; private set
 
     /** Blocking one-time load at process start (tiny preferences file). */
     fun load() = runBlocking {
@@ -38,7 +44,16 @@ class SessionManager(private val context: Context) : SessionCookieSource {
         serverUrl = prefs[keyServerUrl] ?: ""
         sessionCookie = prefs[keyCookie] ?: ""
         username = prefs[keyUsername] ?: ""
+        downloadQuality = DownloadQuality.fromId(prefs[keyDownloadQuality])
     }
+
+    suspend fun setDownloadQuality(quality: DownloadQuality) {
+        downloadQuality = quality
+        context.dataStore.edit { it[keyDownloadQuality] = quality.id }
+    }
+
+    /** Absolute stream URL for [trackId] at the configured download quality. */
+    fun downloadUrl(trackId: Long): String = streamUrlFor(baseUrl, trackId, downloadQuality)
 
     val hasSession: Boolean get() = serverUrl.isNotEmpty() && sessionCookie.isNotEmpty()
 

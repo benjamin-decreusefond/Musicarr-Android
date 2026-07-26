@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Musicarr</string>
+
+    <!-- Offline downloads -->
+    <string name="offline_channel_name">Offline downloads</string>
+    <string name="offline_downloading">Downloading for offline</string>
+    <plurals name="offline_tracks_remaining">
+        <item quantity="one">%d track remaining</item>
+        <item quantity="other">%d tracks remaining</item>
+    </plurals>
 </resources>

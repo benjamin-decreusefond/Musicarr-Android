@@ -40,6 +40,9 @@ class MusicarrRepository(private val client: ApiClient, private val session: Ses
     suspend fun downloads() = call { downloads() }
     suspend fun retryDownload(id: Long) = call { retryDownload(id) }
     suspend fun dismissDownload(id: Long) = call { dismissDownload(id) }
+    suspend fun offlinePins() = call { offlinePins() }
+    suspend fun pinOffline(track: Track) = call { pinOffline(track.trackId, track) }.map { }
+    suspend fun unpinOffline(trackId: Long) = call { unpinOffline(trackId) }.map { }
     suspend fun mixes() = call { mixes() }
     suspend fun history() = call { history() }
     suspend fun recordPlay(trackId: Long) = call { recordPlay(PlayRequest(trackId)) }
