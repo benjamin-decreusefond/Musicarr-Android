@@ -18,12 +18,14 @@ import com.musicarr.android.data.Track
 import com.musicarr.android.ui.ErrorBox
 import com.musicarr.android.ui.LoadState
 import com.musicarr.android.ui.LoadingBox
+import com.musicarr.android.ui.OfflineBanner
 import com.musicarr.android.ui.LocalPlayer
 import com.musicarr.android.ui.MediaCard
 import com.musicarr.android.ui.SectionHeader
 import com.musicarr.android.ui.TrackRow
 import com.musicarr.android.ui.playOrDownload
 import com.musicarr.android.ui.rememberLoad
+import com.musicarr.android.ui.rememberOffline
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -43,7 +45,15 @@ fun HomeScreen(
     val player = LocalPlayer.current
     val scope = rememberCoroutineScope()
 
-    val (state, refresh) = rememberLoad {
+    val offlineNow = rememberOffline()
+    val (state, refresh) = rememberLoad(offlineNow) {
+        // The Home feed is computed server-side (mixes, trending) and has no
+        // local equivalent. Offline, the honest thing to show is the music
+        // that's actually on the device.
+        if (offlineNow) {
+            val local = MusicarrApp.instance.offline.localTracks()
+            return@rememberLoad Result.success(HomeData(HomeFeed(tracks = local), Mixes(), emptyList()))
+        }
         coroutineScope {
             val feed = async { repo.home() }
             val mixes = async { repo.mixes() }
@@ -55,6 +65,7 @@ fun HomeScreen(
         }
     }
 
+    if (offlineNow) OfflineBanner()
     when (state) {
         is LoadState.Loading -> LoadingBox()
         is LoadState.Failed -> ErrorBox(state.message, refresh)

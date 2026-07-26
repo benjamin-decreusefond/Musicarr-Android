@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +67,7 @@ import com.musicarr.android.ui.screens.NowPlayingScreen
 import com.musicarr.android.ui.screens.PlaylistDetailScreen
 import com.musicarr.android.ui.screens.PlaylistsScreen
 import com.musicarr.android.ui.screens.SearchScreen
+import com.musicarr.android.ui.screens.SettingsScreen
 import com.musicarr.android.ui.theme.MusicarrTheme
 import kotlinx.coroutines.launch
 
@@ -77,6 +79,10 @@ private val TOP_DESTINATIONS = listOf(
     TopDestination("library", "Library", Icons.Default.LibraryMusic),
     TopDestination("playlists", "Playlists", Icons.Default.QueueMusic),
     TopDestination("downloads", "Downloads", Icons.Default.Download),
+    // Sixth item: more than Material's recommended five, but the offline
+    // storage and quality controls need to be reachable on a phone too, and a
+    // hidden settings screen is a settings screen nobody finds.
+    TopDestination("settings", "Settings", Icons.Default.Settings),
 )
 
 class MainActivity : ComponentActivity() {
@@ -155,6 +161,7 @@ private fun MainNav(isTv: Boolean, onSignedOut: () -> Unit) {
                     PlaylistsScreen(onOpenPlaylist = { navController.navigate("playlist/$it") })
                 }
                 composable("downloads") { DownloadsScreen(snackbar) }
+                composable("settings") { SettingsScreen(snackbar) }
                 composable("nowplaying") { NowPlayingScreen(snackbar) }
                 composable("album/{id}") { entry ->
                     val id = entry.arguments?.getString("id")?.toLongOrNull() ?: return@composable

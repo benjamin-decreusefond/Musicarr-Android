@@ -33,7 +33,9 @@ import com.musicarr.android.ui.LocalPlayer
 import com.musicarr.android.ui.MediaCard
 import com.musicarr.android.ui.SectionHeader
 import com.musicarr.android.ui.TrackRow
+import com.musicarr.android.ui.OfflineBanner
 import com.musicarr.android.ui.playOrDownload
+import com.musicarr.android.ui.rememberOffline
 import kotlinx.coroutines.delay
 
 @Composable
@@ -50,20 +52,30 @@ fun SearchScreen(
     var results by remember { mutableStateOf<SearchResults?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
+    val offlineNow = rememberOffline()
 
     // Debounced live search against /api/search.
-    LaunchedEffect(query) {
+    LaunchedEffect(query, offlineNow) {
         val q = query.trim()
         if (q.length < 2) { results = null; error = null; return@LaunchedEffect }
         searching = true
         delay(400)
-        repo.search(q)
-            .onSuccess { results = it; error = null }
-            .onFailure { error = it.message }
+        if (offlineNow) {
+            // Only the downloaded catalogue can be searched offline — and it's
+            // the only thing that could be played anyway.
+            val local = MusicarrApp.instance.offline.searchLocal(q)
+            results = SearchResults(tracks = local)
+            error = null
+        } else {
+            repo.search(q)
+                .onSuccess { results = it; error = null }
+                .onFailure { error = it.message }
+        }
         searching = false
     }
 
     Column(Modifier.fillMaxSize()) {
+        if (offlineNow) OfflineBanner()
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },

@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.musicarr.android.MusicarrApp
+import com.musicarr.android.data.AlbumDetail
 import com.musicarr.android.ui.CoverImage
 import com.musicarr.android.ui.ErrorBox
 import com.musicarr.android.ui.LoadState
@@ -34,6 +35,7 @@ import com.musicarr.android.ui.dpadFocusable
 import com.musicarr.android.ui.CollectionOfflineButton
 import com.musicarr.android.ui.OfflineToggle
 import com.musicarr.android.ui.playOrDownload
+import com.musicarr.android.ui.rememberOffline
 import com.musicarr.android.ui.rememberLoad
 import kotlinx.coroutines.launch
 
@@ -42,7 +44,26 @@ fun AlbumScreen(albumId: Long, snackbar: SnackbarHostState, onOpenArtist: (Long)
     val repo = MusicarrApp.instance.repository
     val player = LocalPlayer.current
     val scope = rememberCoroutineScope()
-    val (state, refresh) = rememberLoad(albumId) { repo.album(albumId) }
+    val offlineNow = rememberOffline()
+    val (state, refresh) = rememberLoad(albumId, offlineNow) {
+        // Offline, serve the album from what's actually on the device rather
+        // than failing outright.
+        if (offlineNow) {
+            val local = MusicarrApp.instance.offline.localAlbum(albumId)
+            if (local.isEmpty()) Result.failure(Exception("This album isn't saved on this device"))
+            else Result.success(
+                AlbumDetail(
+                    id = albumId,
+                    title = local.first().album ?: "Album",
+                    artist = local.first().artist,
+                    cover = local.first().cover,
+                    tracks = local,
+                )
+            )
+        } else {
+            repo.album(albumId)
+        }
+    }
     when (state) {
         is LoadState.Loading -> LoadingBox()
         is LoadState.Failed -> ErrorBox(state.message, refresh)
